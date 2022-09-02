@@ -1,0 +1,59 @@
+
+//AES/ECB/PKCS5Padding Encryption
+public string Encryptxx(string text)
+    {
+        SHA1 sha = new SHA1CryptoServiceProvider();
+
+        byte[] src = Encoding.UTF8.GetBytes(text);
+        byte[] key = Encoding.UTF8.GetBytes("Enter Your Key Here");
+
+        byte[] finalKey = new byte[16];
+        byte[] hashSecretKey = sha.ComputeHash(key);
+        Array.Copy(hashSecretKey, finalKey, 16);
+
+        RijndaelManaged aes = new RijndaelManaged();
+        aes.Mode = CipherMode.ECB;
+        aes.Padding = PaddingMode.PKCS7;
+        aes.KeySize = 128;
+        aes.Key = finalKey;
+        using (ICryptoTransform encrypt = aes.CreateEncryptor(aes.Key, null))
+        {
+            byte[] dest = encrypt.TransformFinalBlock(src, 0, src.Length);
+            encrypt.Dispose();
+            return Convert.ToBase64String(dest);
+        }
+    }
+    
+    //AES/ECB/PKCS5Padding Decryption
+     public static string Decrypt(string text, string secretKey)
+    {
+        try
+        {
+            SHA1 sha = new SHA1CryptoServiceProvider();
+            RijndaelManaged aes = new RijndaelManaged();
+
+            byte[] finalKey = new byte[16]; // Used to generate finalKey
+            byte[] byteDataToDecrypt = Convert.FromBase64String(text); // Converting Base64 data to Byte Array
+            byte[] byteSecretKey = Encoding.UTF8.GetBytes(secretKey); // Converting secret key in byte array
+            byte[] hashSecretKey = sha.ComputeHash(byteSecretKey); // geneating hash in byte array of secret key
+
+            Array.Copy(hashSecretKey, finalKey, 16); // copying fist 16 bytes from hashed secret key to finaly key which to use in algo
+            aes.KeySize = 128;
+            aes.Padding = PaddingMode.PKCS7;
+            aes.Mode = CipherMode.ECB;
+            aes.Key = finalKey;
+
+            using (ICryptoTransform decrypt = aes.CreateDecryptor(aes.Key, null)) //Passing IV as NULL because IV is not present in the Java Code
+            {
+                byte[] dest = decrypt.TransformFinalBlock(byteDataToDecrypt, 0, byteDataToDecrypt.Length);
+                decrypt.Dispose();
+                return Encoding.UTF8.GetString(dest);
+            }
+        }
+        catch (Exception ex)
+        {
+
+            throw ex;
+        }
+
+    }
